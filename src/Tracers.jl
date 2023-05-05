@@ -114,22 +114,25 @@ In-place function that interpolates `T` & `Phi`, defined on the `Grid`, to `Trac
 
 Note that we employ linear interpolation using custom functions
 """
-function UpdateTracers_T_ϕ!(Tracers, Grid::Tuple, T::AbstractArray{_T,dim}, Phi::AbstractArray{_T,dim}) where {_T, dim}
+function UpdateTracers_T_ϕ!(Tracers, Grid_v::Tuple, Grid_c::Tuple, T::AbstractArray{_T,dim}, Phi::AbstractArray{_T,dim}) where {_T, dim}
 
     if isassigned(Tracers,1)        # only if the Tracers StructArray is non-empty
         
         # Boundaries of the grid
-        Bound_min = minimum.(Grid)
-        Bound_max = maximum.(Grid)
-        N         = length.(Grid)
+        Bound_min_v = minimum.(Grid_v)
+        Bound_max_v = maximum.(Grid_v)
+        N_v         = length.(Grid_v)
+        Bound_min_c = minimum.(Grid_c)
+        Bound_max_c = maximum.(Grid_c)
+        N_c         = length.(Grid_c)
         
         if dim==2
-            Δx = Grid[1][2]-Grid[1][1]
-            Δz = Grid[2][2]-Grid[2][1]
+            Δx = Grid_v[1][2]-Grid_v[1][1]
+            Δz = Grid_v[2][2]-Grid_v[2][1]
         elseif dim==3
-            Δx = Grid[1][2]-Grid[1][1]
-            Δy = Grid[2][2]-Grid[2][1]
-            Δz = Grid[3][2]-Grid[3][1]
+            Δx = Grid_v[1][2]-Grid_v[1][1]
+            Δy = Grid_v[2][2]-Grid_v[2][1]
+            Δz = Grid_v[3][2]-Grid_v[3][1]
         end
         for iT = 1:length(Tracers)  
             Trac = Tracers[iT];
@@ -137,17 +140,17 @@ function UpdateTracers_T_ϕ!(Tracers, Grid::Tuple, T::AbstractArray{_T,dim}, Phi
 
             # correct point for bounds:
             for i=1:dim
-                if pt[i]<Bound_min[i]; pt[i] = Bound_min[i]; end
-                if pt[i]>Bound_max[i]; pt[i] = Bound_max[i]; end
+                if pt[i]<Bound_min_v[i]; pt[i] = Bound_min_v[i]; end
+                if pt[i]>Bound_max_v[i]; pt[i] = Bound_max_v[i]; end
             end                
             
             # Linear interpolation:
             if dim==2
-                Trac_T = interpolate_linear_2D(pt[1], pt[2], Bound_min, N, Δx, Δz, T   )
-                Trac_ϕ = interpolate_linear_2D(pt[1], pt[2], Bound_min, N, Δx, Δz, Phi )
+                Trac_T = interpolate_linear_2D(pt[1], pt[2], Bound_min_v, N_v, Δx, Δz, T   )
+                Trac_ϕ = interpolate_linear_2D(pt[1], pt[2], Bound_min_c, N_c, Δx, Δz, Phi )
             elseif dim==3
-                Trac_T = interpolate_linear_3D(pt[1], pt[2], pt[3], Bound_min, N, Δx, Δy, Δz, T   )
-                Trac_ϕ = interpolate_linear_3D(pt[1], pt[2], pt[3], Bound_min, N, Δx, Δy, Δz, Phi )
+                Trac_T = interpolate_linear_3D(pt[1], pt[2], pt[3], Bound_min_v, N_v, Δx, Δy, Δz, T   )
+                Trac_ϕ = interpolate_linear_3D(pt[1], pt[2], pt[3], Bound_min_c, N_c, Δx, Δy, Δz, Phi )
             end
 
             # Update values on tracers
@@ -161,6 +164,8 @@ function UpdateTracers_T_ϕ!(Tracers, Grid::Tuple, T::AbstractArray{_T,dim}, Phi
     return nothing
 
 end
+
+UpdateTracers_T_ϕ!(Tracers, Grid::Tuple, T::AbstractArray, Phi::AbstractArray) = UpdateTracers_T_ϕ!(Tracers, Grid, Grid, T, Phi)
 
 """
     UpdateTracers_Field!(Tracers::StructVector{TRACERS}, Grid::GridData{_T,dim}, Field::AbstractArray{_T,dim}, FieldName::Symbol);
